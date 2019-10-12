@@ -11,22 +11,44 @@ const weatherAPI = new WeatherApi(new WeatherAPIService(), cache)
 // GraphQL schema
 const schema = buildSchema(`
     type Query {
-        sols(
-          limit: Int,
-          page: Int
-        ): solsResult
+      getSols(
+        limit: Int,
+        page: Int
+      ): solsResult
+      
+      getSol(
+        sol: String,
+      ): solData
     }
     
     type solsResult {
-      sols: [String]!
+      sols: [solData],
       totalItems: Int
-  }
+    }
+      
+    type solData {
+      sol: String
+      atmosphericTemperate: measurement,
+      horizontalWindSpeed: measurement,
+      pressure: measurement
+    }
+    
+    type measurement {
+      average: Float,
+      minimum: Float,
+      maximum: Float,
+      measurementsCount: Float
+    }
 `);
 
+// TODO: Try to find possible improvements
 // Root resolver
 const root = {
-  sols: async ({ limit = 7, page = 1 }: { limit: number, page: number}) => {
-    return await weatherAPI.getAvailableSols(limit, page)
+  getSols: async ({ limit = 7, page = 1 }: { limit: number, page: number}) => {
+    return await weatherAPI.getAvailableSolsMeasurements(limit, page)
+  },
+  getSol: async ({sol}: {sol: string}) => {
+    return await weatherAPI.getSolData(sol)
   }
 };
 
@@ -50,3 +72,5 @@ updateData()
 setInterval(() => {
   updateData()
 }, 1000*60*5) // 5 minutes
+
+// TODO: Clean index.ts
