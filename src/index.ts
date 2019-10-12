@@ -1,10 +1,12 @@
 import express from 'express'
 import expressGraphQL from "express-graphql";
 import {buildSchema} from "graphql";
-import MockWeatherAPIService from "./weatherAPI/mockWeatherAPIService";
 import WeatherApi from "./weatherAPI/weatherApi";
+import Cache from "./cache/cache";
+import WeatherAPIService from "./weatherAPI/watherAPIService";
 
-const weatherAPI = new WeatherApi(new MockWeatherAPIService())
+const cache = new Cache()
+const weatherAPI = new WeatherApi(new WeatherAPIService(), cache)
 
 // GraphQL schema
 const schema = buildSchema(`
@@ -37,3 +39,14 @@ app.use('/api', expressGraphQL({
 }));
 app.listen(4000, () => console.log('Express GraphQL Server Now Running On localhost:4000/api'));
 
+
+// Getting data at the start and updating existing data every 5 minutes
+const updateData = async () => {
+  await weatherAPI.updateData()
+}
+
+updateData()
+
+setInterval(() => {
+  updateData()
+}, 1000*60*5) // 5 minutes
