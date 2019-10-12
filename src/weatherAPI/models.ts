@@ -1,5 +1,6 @@
-export interface IWeatherAPI {
-  sols: ISol[]
+export interface IGetSolsReponse {
+  sols: string[]
+  totalItems: number
 }
 
 export interface ISol {

@@ -4,18 +4,27 @@ import {buildSchema} from "graphql";
 import MockWeatherAPIService from "./weatherAPI/mockWeatherAPIService";
 import WeatherApi from "./weatherAPI/weatherApi";
 
+const weatherAPI = new WeatherApi(new MockWeatherAPIService())
+
 // GraphQL schema
 const schema = buildSchema(`
     type Query {
-        sols: [String]
+        sols(
+          limit: Int,
+          page: Int
+        ): solsResult
     }
+    
+    type solsResult {
+      sols: [String]!
+      totalItems: Int
+  }
 `);
 
 // Root resolver
 const root = {
-  sols: async () => {
-    const api = new WeatherApi(new MockWeatherAPIService())
-    return await api.getAvailableSols()
+  sols: async ({ limit = 7, page = 1 }: { limit: number, page: number}) => {
+    return await weatherAPI.getAvailableSols(limit, page)
   }
 };
 

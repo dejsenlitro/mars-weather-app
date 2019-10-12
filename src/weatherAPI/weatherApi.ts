@@ -1,4 +1,5 @@
 import {IWeatherAPIService} from "./interfaces";
+import {IGetSolsReponse} from "./models";
 
 export default class WeatherApi {
   private weatherAPIService: IWeatherAPIService
@@ -13,11 +14,18 @@ export default class WeatherApi {
     return data
   }
 
-  public async getAvailableSols(): Promise<string[]> {
+  public async getAvailableSols(limit: number, page: number): Promise<IGetSolsReponse> {
     const data = await this.weatherAPIService.getData()
     const availableSols: string[] = data.sol_keys
-    const sorted = availableSols.sort((a, b) => +b - +a)
+    const sorted = availableSols
+      .sort((a, b) => +b - +a)
+      .slice((page - 1) * limit, page * limit)
 
-    return sorted
+    const response: IGetSolsReponse = {
+      sols: sorted,
+      totalItems: availableSols.length
+    }
+
+    return response
   }
 }
