@@ -1,17 +1,22 @@
 import express from 'express'
 import expressGraphQL from "express-graphql";
 import {buildSchema} from "graphql";
+import MockWeatherAPIService from "./weatherAPI/mockWeatherAPIService";
+import WeatherApi from "./weatherAPI/weatherApi";
 
 // GraphQL schema
 const schema = buildSchema(`
     type Query {
-        message: String
+        sols: [String]
     }
 `);
 
 // Root resolver
 const root = {
-  message: () => 'Hello World!'
+  sols: async () => {
+    const api = new WeatherApi(new MockWeatherAPIService())
+    return await api.getAvailableSols()
+  }
 };
 
 // Create an express server and a GraphQL endpoint
