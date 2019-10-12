@@ -1,3 +1,10 @@
+import {IGetSolsReponse} from "./models";
+
 export interface IWeatherAPIService {
   getData(): Promise<any>
+}
+export interface IWeatherAPI {
+  updateData(): Promise<void>
+  getData(): Promise<any>
+  getAvailableSols(limit: number, page: number): Promise<IGetSolsReponse>
 }
