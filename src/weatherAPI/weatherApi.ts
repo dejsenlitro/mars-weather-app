@@ -1,5 +1,5 @@
 import {IWeatherAPI, IWeatherAPIService} from "./interfaces";
-import {IGetSolsReponse} from "./models";
+import {IGetSolsReponse, ISol} from "./models";
 import {ICache} from "../cache/interfaces";
 
 export default class WeatherApi implements IWeatherAPI {
@@ -27,6 +27,15 @@ export default class WeatherApi implements IWeatherAPI {
     return data
   }
 
+  public async getSolData(sol: string): Promise<ISol> {
+    const data = await this.getData()
+    const solData = this.getSolMeasurements(data, sol)
+
+    return solData
+
+  }
+
+  // TODO: Remove?
   public async getAvailableSols(limit: number, page: number): Promise<IGetSolsReponse> {
     const data = await this.getData()
     const availableSols: string[] = data.sol_keys
@@ -34,11 +43,62 @@ export default class WeatherApi implements IWeatherAPI {
       .sort((a, b) => +b - +a)
       .slice((page - 1) * limit, page * limit)
 
-    const response: IGetSolsReponse = {
+    const response: any = {
       sols: sorted,
       totalItems: availableSols.length
     }
 
     return response
+  }
+
+  public async getAvailableSolsMeasurements(limit: number, page: number): Promise<IGetSolsReponse> {
+    const data = await this.getData()
+    const availableSols: string[] = data.sol_keys
+    const sorted = availableSols
+      .sort((a, b) => +b - +a)
+      .slice((page - 1) * limit, page * limit)
+
+    const resp: ISol[] = []
+    for (const sol of sorted) {
+      const solData: ISol = this.getSolMeasurements(data, sol)
+      resp.push(solData)
+    }
+
+    const response: IGetSolsReponse = {
+      sols: resp,
+      totalItems: availableSols.length
+    }
+
+    return response
+  }
+
+  private getSolMeasurements(data, sol: string): ISol {
+    const solMeasurements = data[sol]
+    const tempMeasurement = solMeasurements.AT
+    const pressureMeasurement = solMeasurements.PRE
+    const windMeasurements = solMeasurements.HWS
+    const solData: ISol = {
+      sol: sol,
+      atmosphericTemperate: {
+        average: tempMeasurement.av,
+        minimum: tempMeasurement.mn,
+        maximum: tempMeasurement.mx,
+        measurementsCount: tempMeasurement.ct
+      },
+      horiszontalWindSpeed: {
+        average: pressureMeasurement.av,
+        minimum: pressureMeasurement.mn,
+        maximum: pressureMeasurement.mx,
+        measurementsCount: pressureMeasurement.ct
+      },
+      pressure: {
+        average: windMeasurements.av,
+        minimum: windMeasurements.mn,
+        maximum: windMeasurements.mx,
+        measurementsCount: windMeasurements.ct
+      },
+    }
+
+    return solData
   }
 }
