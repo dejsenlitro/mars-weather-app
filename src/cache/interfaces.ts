@@ -1,5 +1,5 @@
 export interface ICache {
-  get(): Promise<any>
-  set(data: any): Promise<void>
+  get(): any
+  set(data: any): void
   clear(): void
 }

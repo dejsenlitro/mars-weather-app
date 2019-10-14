@@ -1,4 +1,4 @@
-import {IGetSolsReponse, ISol} from "./models";
+import {IGetSolsReponse, ISol} from './models'
 
 export interface IWeatherAPIService {
   getData(): Promise<any>

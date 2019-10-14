@@ -1,5 +1,5 @@
 import axios from 'axios'
-import {IWeatherAPIService} from "./interfaces";
+import {IWeatherAPIService} from './interfaces'
 
 export default class WeatherAPIService implements IWeatherAPIService {
   public async getData() {

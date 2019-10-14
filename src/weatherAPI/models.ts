@@ -6,8 +6,12 @@ export interface IGetSolsReponse {
 export interface ISol {
   sol: string
   atmosphericTemperate: IMeasurement
-  horiszontalWindSpeed: IMeasurement
+  horizontalWindSpeed: IMeasurement
   pressure: IMeasurement
+}
+
+export interface ISolDb extends  ISol{
+  _id: string
 }
 
 export interface IMeasurement {

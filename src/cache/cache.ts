@@ -1,14 +1,14 @@
-import {ICache} from "./interfaces";
+import {ICache} from './interfaces'
 
 export default class Cache implements ICache {
   private data: any
 
-  public async get() {
+  public get() {
 
       return this.data
   }
 
-  public async set(data: any) {
+  public set(data: any) {
     this.data = data
   }
 

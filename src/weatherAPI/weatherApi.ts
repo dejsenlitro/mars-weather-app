@@ -1,28 +1,52 @@
-import {IWeatherAPI, IWeatherAPIService} from "./interfaces";
-import {IGetSolsReponse, ISol} from "./models";
-import {ICache} from "../cache/interfaces";
+import {IWeatherAPI, IWeatherAPIService} from './interfaces'
+import {IGetSolsReponse, ISol, ISolDb} from './models'
+import {ICache} from '../cache/interfaces'
+import equal from 'deep-equal'
 
 export default class WeatherApi implements IWeatherAPI {
   private weatherAPIService: IWeatherAPIService
   private cache: ICache
+  private readonly solModel: any
 
-  constructor(weatherAPIService: IWeatherAPIService, cache: ICache) {
+  constructor(weatherAPIService: IWeatherAPIService, cache: ICache, solModel: any) {
     this.weatherAPIService = weatherAPIService
     this.cache = cache
+    this.solModel = solModel
   }
 
+  // Get new data from weather service, check if data in database is the same and update if needed
   public async updateData() {
     const data = await this.weatherAPIService.getData()
-    await this.cache.set(data)
+
+    this.cache.set(data)
+
+    const oldestSol: string = data.sol_keys[0]
+    const dbResponse = await this.solModel.findOne({sol: oldestSol})
+
+    const solData: ISol = await this.getSolData(oldestSol)
+
+    if (dbResponse === null) {
+      const newSol = new this.solModel(solData)
+      await newSol.save(solData)
+    } else {
+      const solDataDb: ISolDb = dbResponse._doc
+
+      if (!equal(solData.pressure, solDataDb.pressure) ||
+        !equal(solData.atmosphericTemperate, solDataDb.atmosphericTemperate) ||
+        !equal(solData.horizontalWindSpeed, solDataDb.horizontalWindSpeed)
+      ) {
+        await this.solModel.updateOne({_id: solDataDb._id}, solData)
+      }
+    }
   }
 
   public async getData(): Promise<any> {
-    const cachedData = await this.cache.get()
+    const cachedData = this.cache.get()
     if (cachedData)
       return cachedData
 
     const data = await this.weatherAPIService.getData()
-    await this.cache.set(data)
+    this.cache.set(data)
 
     return data
   }
@@ -45,7 +69,7 @@ export default class WeatherApi implements IWeatherAPI {
 
     const response: any = {
       sols: sorted,
-      totalItems: availableSols.length
+      totalItems: availableSols.length,
     }
 
     return response
@@ -66,7 +90,7 @@ export default class WeatherApi implements IWeatherAPI {
 
     const response: IGetSolsReponse = {
       sols: resp,
-      totalItems: availableSols.length
+      totalItems: availableSols.length,
     }
 
     return response
@@ -78,24 +102,24 @@ export default class WeatherApi implements IWeatherAPI {
     const pressureMeasurement = solMeasurements.PRE
     const windMeasurements = solMeasurements.HWS
     const solData: ISol = {
-      sol: sol,
+      sol,
       atmosphericTemperate: {
         average: tempMeasurement.av,
         minimum: tempMeasurement.mn,
         maximum: tempMeasurement.mx,
-        measurementsCount: tempMeasurement.ct
+        measurementsCount: tempMeasurement.ct,
       },
-      horiszontalWindSpeed: {
+      horizontalWindSpeed: {
         average: pressureMeasurement.av,
         minimum: pressureMeasurement.mn,
         maximum: pressureMeasurement.mx,
-        measurementsCount: pressureMeasurement.ct
+        measurementsCount: pressureMeasurement.ct,
       },
       pressure: {
         average: windMeasurements.av,
         minimum: windMeasurements.mn,
         maximum: windMeasurements.mx,
-        measurementsCount: windMeasurements.ct
+        measurementsCount: windMeasurements.ct,
       },
     }
 
