@@ -1,6 +1,6 @@
 import {weatherAPI} from '../index'
 
-export const root = {
+export default {
   getSols: async ({ limit = 7, page = 1 }: { limit: number, page: number}) => {
     return await weatherAPI.getAvailableSolsMeasurements(limit, page)
   },

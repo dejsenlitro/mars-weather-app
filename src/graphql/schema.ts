@@ -1,7 +1,7 @@
 // GraphQL schema
 import {buildSchema} from 'graphql'
 
-export const schema = buildSchema(`
+export default buildSchema(`
     type Query {
       getSols(
         limit: Int,
