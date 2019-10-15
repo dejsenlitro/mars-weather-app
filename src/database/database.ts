@@ -54,7 +54,6 @@ export default class Database implements IDatabase {
     const dataDb = await this.solModel.find()
     const solsFromDatabase: ISol[] = dataDb.map((d) => d._doc)
       .sort((a, b) => +b.sol - +a.sol)
-      .slice(1, dataDb.length)
 
     return solsFromDatabase
   }
