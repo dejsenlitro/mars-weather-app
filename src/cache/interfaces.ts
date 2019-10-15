@@ -1,5 +1,7 @@
+import {ISol} from '../weatherAPI/models'
+
 export interface ICache {
-  get(): any
-  set(data: any): void
+  get(): ISol[]
+  set(data: ISol[]): void
   clear(): void
 }

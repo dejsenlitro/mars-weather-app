@@ -1,3 +1,4 @@
+import {IDatabase} from '../database/interfaces'
 import {IWeatherAPI, IWeatherAPIService} from './interfaces'
 import {IGetSolsReponse, ISol, ISolDb} from './models'
 import {ICache} from '../cache/interfaces'
@@ -6,94 +7,102 @@ import equal from 'deep-equal'
 export default class WeatherApi implements IWeatherAPI {
   private weatherAPIService: IWeatherAPIService
   private cache: ICache
-  private readonly solModel: any
+  private database: IDatabase
 
-  constructor(weatherAPIService: IWeatherAPIService, cache: ICache, solModel: any) {
+  constructor(weatherAPIService: IWeatherAPIService, cache: ICache, database: IDatabase) {
     this.weatherAPIService = weatherAPIService
     this.cache = cache
-    this.solModel = solModel
+    this.database = database
+  }
+
+  public async getSolsWithMeasurements(limit: number, page: number): Promise<IGetSolsReponse> {
+    try {
+      const sols: ISol[] = await this.getSolsData()
+      const totalItems: number = sols.length
+
+      const response: IGetSolsReponse = {
+        sols: sols.slice((page - 1) * limit, page * limit),
+        totalItems,
+      }
+
+      return response
+    } catch (e) {
+      throw new Error('Failed to fetch sols')
+    }
+  }
+
+  public async getSolWithMeasurements(sol: string): Promise<ISol> {
+    const solsData: ISol[] = await this.getSolsData()
+    const solData = solsData.find((s) => s.sol === sol)
+
+    if (!solData)
+      throw new Error('There is no data for requested sol')
+
+    return solData
   }
 
   // Get new data from weather service, check if data in database is the same and update if needed
-  public async updateData() {
-    const data = await this.weatherAPIService.getData()
+  // I query the db every time, so that the measurements for the day last sol are us updated as possible when it is removed from the API
+  public async updateSolsData() {
+    try {
+      const data = await this.weatherAPIService.getData()
+      const oldestSolInAPIKey: string = data.sol_keys[0]
 
-    this.cache.set(data)
+      await this.updateCachedData(data)
+      await this.updateDatabaseDataForLastSolInAPI(oldestSolInAPIKey)
+    } catch (e) {
+      console.error(e)
+    }
+  }
 
-    const oldestSol: string = data.sol_keys[0]
-    const dbResponse = await this.solModel.findOne({sol: oldestSol})
+  private async getSolsData(): Promise<ISol[]> {
+    const cachedData = this.cache.get()
+    if (cachedData)
+      return cachedData
 
-    const solData: ISol = await this.getSolData(oldestSol)
+    await this.updateSolsData()
 
-    if (dbResponse === null) {
-      const newSol = new this.solModel(solData)
-      await newSol.save(solData)
+    return this.cache.get()
+  }
+
+  private async updateCachedData(data) {
+    const solsData: ISol[] = []
+    for (const solKey of data.sol_keys) {
+      const solData1: ISol = this.getSolMeasurements(data, solKey)
+      solsData.push(solData1)
+    }
+
+    const solsFromDatabase: ISol[] = await this.database.getSols()
+    for (const d of solsFromDatabase) {
+      if (!solsData.find((s) => s.sol === d.sol))
+        solsData.push(d)
+    }
+
+    solsData.sort((a, b) => +b.sol - +a.sol)
+
+    this.cache.set(solsData)
+  }
+
+  private async updateDatabaseDataForLastSolInAPI(oldestSolInAPIKey: string) {
+    const oldestSolData: ISolDb = await this.database.getSol(oldestSolInAPIKey)
+
+    const solsData: ISol[] = await this.getSolsData()
+    const solData: ISol | undefined = solsData.find((s) => s.sol === oldestSolInAPIKey)
+    if (!solData)
+      return
+
+    if (oldestSolData === null) {
+      await this.database.insertNewSol(solData)
     } else {
-      const solDataDb: ISolDb = dbResponse._doc
+      const solDataDb: ISolDb = oldestSolData
 
       if (!equal(solData.pressure, solDataDb.pressure) ||
         !equal(solData.atmosphericTemperate, solDataDb.atmosphericTemperate) ||
         !equal(solData.horizontalWindSpeed, solDataDb.horizontalWindSpeed)
       ) {
-        await this.solModel.updateOne({_id: solDataDb._id}, solData)
+        await this.database.updateSol(solData, solDataDb._id)
       }
     }
-  }
-
-  public async getData(): Promise<any> {
-    const cachedData = this.cache.get()
-    if (cachedData)
-      return cachedData
-
-    const data = await this.weatherAPIService.getData()
-    this.cache.set(data)
-
-    return data
-  }
-
-  public async getSolData(sol: string): Promise<ISol> {
-    const data = await this.getData()
-    const solData = this.getSolMeasurements(data, sol)
-
-    return solData
-
-  }
-
-  // TODO: Remove?
-  public async getAvailableSols(limit: number, page: number): Promise<IGetSolsReponse> {
-    const data = await this.getData()
-    const availableSols: string[] = data.sol_keys
-    const sorted = availableSols
-      .sort((a, b) => +b - +a)
-      .slice((page - 1) * limit, page * limit)
-
-    const response: any = {
-      sols: sorted,
-      totalItems: availableSols.length,
-    }
-
-    return response
-  }
-
-  public async getAvailableSolsMeasurements(limit: number, page: number): Promise<IGetSolsReponse> {
-    const data = await this.getData()
-    const availableSols: string[] = data.sol_keys
-    const sorted = availableSols
-      .sort((a, b) => +b - +a)
-      .slice((page - 1) * limit, page * limit)
-
-    const resp: ISol[] = []
-    for (const sol of sorted) {
-      const solData: ISol = this.getSolMeasurements(data, sol)
-      resp.push(solData)
-    }
-
-    const response: IGetSolsReponse = {
-      sols: resp,
-      totalItems: availableSols.length,
-    }
-
-    return response
   }
 
   private getSolMeasurements(data, sol: string): ISol {

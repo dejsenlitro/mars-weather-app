@@ -1,11 +1,11 @@
 import {expect} from 'chai'
+import Database from '../src/database/database'
 import WeatherApi from '../src/weatherAPI/weatherApi'
 import MockWeatherAPIService from '../src/weatherAPI/mockWeatherAPIService'
 import {IGetSolsReponse} from '../src/weatherAPI/models'
 import Cache from '../src/cache/cache'
-import {solModel} from '../src/database/db'
 
-const api = new WeatherApi(new MockWeatherAPIService(), new Cache(), solModel)
+const api = new WeatherApi(new MockWeatherAPIService(), new Cache(), new Database())
 
 // TODO: Is this really needed?
 describe('Available Sols', () => {
@@ -82,7 +82,7 @@ describe('Available Sols', () => {
     const limit: number = 3
     const page: number = 1
 
-    const receivedData = await api.getAvailableSolsMeasurements(limit, page)
+    const receivedData = await api.getSolsWithMeasurements(limit, page)
     expect(expectedData).deep.equal(receivedData)
   })
 
@@ -159,7 +159,7 @@ describe('Available Sols', () => {
     const limit: number = 3
     const page: number = 2
 
-    const receivedData = await api.getAvailableSolsMeasurements(limit, page)
+    const receivedData = await api.getSolsWithMeasurements(limit, page)
     expect(expectedData).deep.equal(receivedData)
   })
 
@@ -194,7 +194,7 @@ describe('Available Sols', () => {
     const limit: number = 3
     const page: number = 3
 
-    const receivedData = await api.getAvailableSolsMeasurements(limit, page)
+    const receivedData = await api.getSolsWithMeasurements(limit, page)
     expect(expectedData).deep.equal(receivedData)
   })
 })

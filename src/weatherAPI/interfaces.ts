@@ -4,8 +4,7 @@ export interface IWeatherAPIService {
   getData(): Promise<any>
 }
 export interface IWeatherAPI {
-  getSolData(sol: string): Promise<ISol>
-  updateData(): Promise<void>
-  getData(): Promise<any>
-  getAvailableSols(limit: number, page: number): Promise<IGetSolsReponse>
+  getSolWithMeasurements(sol: string): Promise<ISol>
+  updateSolsData(): Promise<void>
+  getSolsWithMeasurements(limit: number, page: number): Promise<IGetSolsReponse>
 }
