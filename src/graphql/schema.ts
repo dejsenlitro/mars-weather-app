@@ -1,8 +1,7 @@
-// GraphQL schema
-import {buildSchema} from 'graphql'
+import {gql} from 'apollo-server'
 
-export default buildSchema(`
-    type Query {
+export default gql(`
+  type Query {
       getSols(
         limit: Int,
         page: Int
@@ -16,6 +15,8 @@ export default buildSchema(`
     type solsResult {
       sols: [solData],
       totalItems: Int
+      limit: Int
+      page: Int
     }
 
     type solData {
@@ -31,4 +32,8 @@ export default buildSchema(`
       maximum: Float,
       measurementsCount: Float
     }
+
+    type Subscription {
+		  changedSols: solsResult
+	  }
 `)

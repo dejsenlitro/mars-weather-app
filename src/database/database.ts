@@ -47,7 +47,7 @@ export default class Database implements IDatabase {
   public async getSol(sol: string): Promise<ISolDb> {
     const dbResponse = await this.solModel.findOne({sol})
 
-    return dbResponse === null ? undefined : dbResponse._doc
+    return dbResponse === null ? null : dbResponse._doc
   }
 
   public async getSols(): Promise<ISol[]> {

@@ -6,7 +6,7 @@ import Cache from '../src/cache/cache'
 
 const api = new WeatherApi(new MockWeatherAPIService(), new Cache(), new Database())
 
-// TODO: Is this really needed?
+// TODO: create mock database and add tests for data from database
 describe('Available Sols', () => {
   it('limit 3, page 1, total 7', async () => {
     const expectedResult: string[] =  ['310', '309', '308']
