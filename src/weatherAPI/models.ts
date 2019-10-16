@@ -1,6 +1,8 @@
 export interface IGetSolsReponse {
   sols: ISol[]
   totalItems: number
+  limit: number
+  page: number
 }
 
 export interface ISol {

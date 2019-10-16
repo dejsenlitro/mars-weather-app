@@ -1,35 +1,25 @@
-import express from 'express'
-import expressGraphQL from 'express-graphql'
-import Database from './database/database'
-import root from './graphql/resolvers'
-import schema from './graphql/schema'
-import WeatherApi from './weatherAPI/weatherApi'
+import {ApolloServer, PubSub} from 'apollo-server'
 import Cache from './cache/cache'
+import Database from './database/database'
+import resolvers from './graphql/resolvers'
+import schema from './graphql/schema'
 import WeatherAPIService from './weatherAPI/watherAPIService'
+import WeatherApi from './weatherAPI/weatherApi'
 
-// Create an express server and a GraphQL endpoint
-const app = express()
-app.use('/api', expressGraphQL({
-  schema,
-  rootValue: root,
-  graphiql: true,
-  customFormatErrorFn: (err) => {
-    return err.message
-  },
-}))
-app.listen(4000, () => console.log('Express GraphQL Server Now Running On localhost:4000/api'))
+export const pubsub = new PubSub()
+export const MEASUREMENTS_CHANGED = 'MEASUREMENTS_CHANGED'
+
+const server = new ApolloServer({typeDefs: schema, resolvers})
+
+server.listen().then(({url}) => {
+  console.log(`🚀  Server ready at ${url}`)
+})
 
 // Create instance of weather API
-const database = new Database()
-export const weatherAPI = new WeatherApi(new WeatherAPIService(), new Cache(), database)
+export const weatherAPI = new WeatherApi(new WeatherAPIService(), new Cache(), new Database())
 
-// Getting data at the start and updating existing data every 5 minutes
-const updateData = async () => {
-  await weatherAPI.updateSolsData()
-}
-
-updateData()
+weatherAPI.updateSolsData()
 
 setInterval(() => {
-  updateData()
+  weatherAPI.updateSolsData()
 }, 1000 * 60 * 5) // 5 minutes

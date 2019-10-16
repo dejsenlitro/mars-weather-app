@@ -1,4 +1,5 @@
 import {IDatabase} from '../database/interfaces'
+import {MEASUREMENTS_CHANGED, pubsub} from '../index'
 import {IWeatherAPI, IWeatherAPIService} from './interfaces'
 import {IGetSolsReponse, ISol, ISolDb} from './models'
 import {ICache} from '../cache/interfaces'
@@ -23,6 +24,8 @@ export default class WeatherApi implements IWeatherAPI {
       const response: IGetSolsReponse = {
         sols: sols.slice((page - 1) * limit, page * limit),
         totalItems,
+        limit,
+        page,
       }
 
       return response
@@ -48,10 +51,33 @@ export default class WeatherApi implements IWeatherAPI {
       const data = await this.weatherAPIService.getData()
       const oldestSolInAPIKey: string = data.sol_keys[0]
 
+      this.compareData(data)
+
       await this.updateCachedData(data)
       await this.updateDatabaseDataForLastSolInAPI(oldestSolInAPIKey)
     } catch (e) {
       console.error(e)
+    }
+  }
+
+  private async compareData(data) {
+    const currentSolsData: ISol[] = []
+    for (const solKey of data.sol_keys) {
+      const solData1: ISol = this.getSolMeasurements(data, solKey)
+      currentSolsData.push(solData1)
+    }
+
+    const previousSolsData: ISol[] = await this.getSolsData()
+
+    const changedSols: ISol[] = []
+    for (const sol of currentSolsData) {
+      const previousSolData = previousSolsData.find((s) => s.sol === sol.sol)
+      if (!equal(previousSolData, sol))
+        changedSols.push(sol)
+    }
+
+    if (changedSols.length > 0) {
+      pubsub.publish(MEASUREMENTS_CHANGED, {changedSols: {sols: changedSols}})
     }
   }
 
