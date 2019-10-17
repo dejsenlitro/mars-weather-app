@@ -77,7 +77,7 @@ export default class WeatherApi implements IWeatherAPI {
     }
 
     if (changedSols.length > 0) {
-      pubsub.publish(MEASUREMENTS_CHANGED, {changedSols: {sols: changedSols}})
+      pubsub.publish(MEASUREMENTS_CHANGED, {changedSols})
     }
   }
 

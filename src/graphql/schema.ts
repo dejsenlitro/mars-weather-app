@@ -34,6 +34,6 @@ export default gql(`
     }
 
     type Subscription {
-		  changedSols: solsResult
+		  changedSols: [solData]
 	  }
 `)
